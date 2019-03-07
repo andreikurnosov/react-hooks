@@ -1,11 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import axios from 'axios';
 
 const todo = (props) => {
   const [todoName, setTodoName] = useState('');
-  const [submittedTodo, setSubmittedTodo] = useState(null);
-  const [todoList, setTodoList] = useState([]);
+  // const [submittedTodo, setSubmittedTodo] = useState(null);
+  // const [todoList, setTodoList] = useState([]);
   // const [todoState, setTodoState] = useState({ userInput: '', todoList: [] });
+
+  const todoListReducer = (state, action) => {
+    switch (action.type) {
+      case 'ADD':
+        return state.concat(action.payload);
+      case 'SET':
+        return action.payload;
+      case 'REMOVE':
+        return state.filter((todo) => todo.id !== action.payload);
+      default:
+        return state;
+    }
+  };
+
+  const [todoList, dispatch] = useReducer(todoListReducer, []);
 
   useEffect(() => {
     axios.get('https://vue-exp.firebaseio.com/todos.json').then((res) => {
@@ -15,7 +30,7 @@ const todo = (props) => {
       for (const key in todoData) {
         todos.push({ id: key, name: todoData[key].name });
       }
-      setTodoList(todos);
+      dispatch({ type: 'SET', payload: todos });
     });
     return () => {
       console.log('Cleanup');
@@ -33,11 +48,11 @@ const todo = (props) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (submittedTodo){
-      setTodoList(todoList.concat(submittedTodo));
-    }
-  }, [submittedTodo]);
+  // useEffect(() => {
+  //   if (submittedTodo) {
+  //     dispatch({ type: 'ADD', payload: submittedTodo });
+  //   }
+  // }, [submittedTodo]);
 
   const inputChangeHandler = (event) => {
     // setTodoState({
@@ -57,12 +72,21 @@ const todo = (props) => {
       .post('https://vue-exp.firebaseio.com/todos.json', { name: todoName })
       .then((res) => {
         const todoItem = { id: res.data.name, name: todoName };
-        setSubmittedTodo(todoItem);
+        dispatch({type: 'ADD', payload: todoItem})
       })
       .catch((err) => {
         console.log(err);
       });
   };
+
+  const todoRemoveHadler = (todoId) => {
+    axios
+      .delete(`https://vue-exp.firebaseio.com/todos/${todoId}.json`)
+      .then(res => {
+        dispatch({ type: 'REMOVE', payload: todoId });
+      })
+      .catch((err) => console.log(err));
+   };
 
   return (
     <React.Fragment>
@@ -75,7 +99,12 @@ const todo = (props) => {
       <button onClick={todoAddHandler}>Add</button>
       <ul>
         {todoList.map((todo) => (
-          <li key={Math.random()}>{todo.name}</li>
+          <li
+            key={Math.random()}
+            onClick={todoRemoveHadler.bind(this, todo.id)}
+          >
+            {todo.name}
+          </li>
         ))}
       </ul>
     </React.Fragment>
