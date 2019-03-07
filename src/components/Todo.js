@@ -1,7 +1,10 @@
-import React, {  useEffect, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useReducer, useRef } from 'react';
 import axios from 'axios';
 
+import List from './List';
+
 const todo = (props) => {
+  const [inputIsValid, setInputIsValid] = useState(false);
   // const [todoName, setTodoName] = useState('');
   // const [submittedTodo, setSubmittedTodo] = useState(null);
   // const [todoList, setTodoList] = useState([]);
@@ -38,16 +41,24 @@ const todo = (props) => {
     };
   }, []);
 
-  const mouseMoverHandler = (event) => {
-    console.log(event.clientX, event.clientY);
+  const inputValidationHandler = (event) => {
+    if (event.target.value.trim() === '') {
+      setInputIsValid(false);
+    } else {
+      setInputIsValid(true);
+    }
   };
 
-  useEffect(() => {
-    document.addEventListener('mousemove', mouseMoverHandler);
-    return () => {
-      document.removeEventListener('mousemove', mouseMoverHandler);
-    };
-  }, []);
+  // const mouseMoverHandler = (event) => {
+  //   console.log(event.clientX, event.clientY);
+  // };
+
+  // useEffect(() => {
+  //   document.addEventListener('mousemove', mouseMoverHandler);
+  //   return () => {
+  //     document.removeEventListener('mousemove', mouseMoverHandler);
+  //   };
+  // }, []);
 
   // useEffect(() => {
   //   if (submittedTodo) {
@@ -75,7 +86,7 @@ const todo = (props) => {
       .post('https://vue-exp.firebaseio.com/todos.json', { name: todoName })
       .then((res) => {
         const todoItem = { id: res.data.name, name: todoName };
-        dispatch({type: 'ADD', payload: todoItem})
+        dispatch({ type: 'ADD', payload: todoItem });
       })
       .catch((err) => {
         console.log(err);
@@ -85,11 +96,11 @@ const todo = (props) => {
   const todoRemoveHadler = (todoId) => {
     axios
       .delete(`https://vue-exp.firebaseio.com/todos/${todoId}.json`)
-      .then(res => {
+      .then((res) => {
         dispatch({ type: 'REMOVE', payload: todoId });
       })
       .catch((err) => console.log(err));
-   };
+  };
 
   return (
     <React.Fragment>
@@ -97,18 +108,12 @@ const todo = (props) => {
         type="text"
         placeholder="Todo"
         ref={todoInputRef}
+        onChange={inputValidationHandler}
+        style={{ backgroundColor: inputIsValid ? 'transparent' : 'red' }}
       />
       <button onClick={todoAddHandler}>Add</button>
-      <ul>
-        {todoList.map((todo) => (
-          <li
-            key={Math.random()}
-            onClick={todoRemoveHadler.bind(this, todo.id)}
-          >
-            {todo.name}
-          </li>
-        ))}
-      </ul>
+
+      <List items={todoList} onClick={todoRemoveHadler} />
     </React.Fragment>
   );
 };
